@@ -1,0 +1,8 @@
+[package]
+name = "epic-killer"
+version = "0.1.0"
+authors = ["Nico Zimmermann <mail@nico-zimmermann.com>"]
+edition = "2018"
+
+[dependencies]
+walkdir="2.2.7"
