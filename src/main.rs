@@ -4,8 +4,8 @@ use std::io;
 use walkdir::WalkDir;
 
 const DEBUG: bool = false;
-const EPIC_LAUNCHER: &str = "";
-const EPIC_GAMES: &str = "C:\\opt";
+const EPIC_LAUNCHER: &str = "notepad++.exe";
+const EPIC_GAMES: &str = "C:\\temp";
 
 fn main() {
     let games = find_games(EPIC_GAMES).expect("no games found");
@@ -15,7 +15,11 @@ fn main() {
         }
     }
 
-    println!("something running: {}", is_game_running(games).unwrap());
+    let is_game_running = is_game_running(games).unwrap();
+    println!("a game is running: {}", is_game_running);
+    if !is_game_running {
+        kill_epic_launcher();
+    }
 }
 
 
@@ -60,4 +64,10 @@ fn find_games(root: &str) -> io::Result<HashSet<String>> {
     }
     
     Ok(paths)
+}
+
+fn kill_epic_launcher(){
+    Command::new("taskkill.exe")
+        .args(&["/IM", EPIC_LAUNCHER])
+        .status();
 }
