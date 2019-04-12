@@ -5,9 +5,15 @@ use walkdir::WalkDir;
 
 const DEBUG: bool = false;
 const EPIC_LAUNCHER: &str = "notepad++.exe";
-const EPIC_GAMES: &str = "C:\\temp";
 
 fn main() {
+    let epic_games = std::env::args().nth(1);
+    if epic_games.is_none() {
+        println!("USAGE: {} EPIC_GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
+        return;
+    }
+    
+    
     let games = find_games(EPIC_GAMES).expect("no games found");
     if DEBUG {
         for game in &games {
@@ -17,8 +23,8 @@ fn main() {
 
     let is_game_running = is_game_running(games).unwrap();
     println!("a game is running: {}", is_game_running);
-    if !is_game_running {
-        kill_epic_launcher();
+    if !is_game_running && kill_epic_launcher().is_err() {
+        println!("couldn't kill epic launcher");
     }
 }
 
@@ -66,8 +72,9 @@ fn find_games(root: &str) -> io::Result<HashSet<String>> {
     Ok(paths)
 }
 
-fn kill_epic_launcher(){
+fn kill_epic_launcher() -> io::Result<std::process::ExitStatus>{
     Command::new("taskkill.exe")
         .args(&["/IM", EPIC_LAUNCHER])
-        .status();
+        .stderr(std::process::Stdio::null())
+        .status()
 }
