@@ -1,6 +1,6 @@
 use std::process::Command;
 use std::collections::HashSet;
-use std::io;
+use std::{thread, time, io};
 use walkdir::WalkDir;
 
 const DEBUG: bool = false;
@@ -14,23 +14,31 @@ fn main() {
     }
     
     
-    let games = find_games(EPIC_GAMES).expect("no games found");
+    let games = find_games(&epic_games.unwrap()).expect("no games found");
     if DEBUG {
         for game in &games {
             println!("game: {}", game);
         }
     }
 
-    let is_game_running = is_game_running(games).unwrap();
-    println!("a game is running: {}", is_game_running);
-    if !is_game_running && kill_epic_launcher().is_err() {
-        println!("couldn't kill epic launcher");
+
+    while true {
+        let is_game_running = is_game_running(&games).unwrap();
+        println!("a game is running: {}", is_game_running);
+        if !is_game_running {
+            println!("kill epic launcher...");
+            if kill_epic_launcher().is_err() {
+                println!("couldn't kill epic launcher");
+            }
+        }
+        
+        thread::sleep(time::Duration::new(15, 0));
     }
 }
 
 
 
-fn is_game_running(game_paths: HashSet<String>) -> io::Result<bool> {
+fn is_game_running(game_paths: &HashSet<String>) -> io::Result<bool> {
     let is_running = !find_running()?.is_disjoint(&game_paths);
     
     Ok(is_running)
