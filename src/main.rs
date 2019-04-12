@@ -3,36 +3,36 @@ use std::collections::HashSet;
 use std::{thread, time, io};
 use walkdir::WalkDir;
 
-const DEBUG: bool = false;
 const EPIC_LAUNCHER: &str = "notepad++.exe";
+const SLEEP_SECONDS: u64 = 15;
+const NOT_RUNNING_LOOPS: u8 = 2;
 
 fn main() {
-    let epic_games = std::env::args().nth(1);
-    if epic_games.is_none() {
+    let epic_games_root = std::env::args().nth(1);
+    if epic_games_root.is_none() {
         println!("USAGE: {} EPIC_GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
         return;
     }
     
+    let games = find_games(&epic_games_root.unwrap()).expect("no games found");
     
-    let games = find_games(&epic_games.unwrap()).expect("no games found");
-    if DEBUG {
-        for game in &games {
-            println!("game: {}", game);
-        }
-    }
-
-
+    let mut not_running = 0;
     while true {
-        let is_game_running = is_game_running(&games).unwrap();
-        println!("a game is running: {}", is_game_running);
-        if !is_game_running {
-            println!("kill epic launcher...");
-            if kill_epic_launcher().is_err() {
-                println!("couldn't kill epic launcher");
+        if is_game_running(&games).unwrap() {
+            not_running = 0;
+            println!("a game is running");
+        }else{
+            not_running += 1;
+            println!("no game is running ({}. time)", not_running);
+            if not_running >= NOT_RUNNING_LOOPS {
+                println!("kill epic launcher...");
+                if kill_epic_launcher().is_err() {
+                    println!("couldn't kill epic launcher");
+                }
             }
         }
         
-        thread::sleep(time::Duration::new(15, 0));
+        thread::sleep(time::Duration::new(SLEEP_SECONDS, 0));
     }
 }
 
