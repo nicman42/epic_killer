@@ -17,16 +17,20 @@ fn main() {
     let games = find_games(&epic_games_root.unwrap()).expect("no games found");
     
     let mut not_running = 0;
-    while true {
-        if is_game_running(&games).unwrap() {
+    loop {
+		let (running_epic, running_game) = is_running(&games).unwrap();
+		
+		if !running_epic {
+			not_running = 0;
+			println!("epic launcher is not running");
+		} else if running_game {
             not_running = 0;
             println!("a game is running");
         }else{
             not_running += 1;
             println!("no game is running ({}. time)", not_running);
             if not_running >= NOT_RUNNING_LOOPS {
-                println!("kill epic launcher...");
-                if kill_epic_launcher().is_err() {
+                if kill_epic_launcher(not_running > NOT_RUNNING_LOOPS).is_err() {
                     println!("couldn't kill epic launcher");
                 }
             }
@@ -38,11 +42,22 @@ fn main() {
 
 
 
-fn is_game_running(game_paths: &HashSet<String>) -> io::Result<bool> {
-    let is_running = !find_running()?.is_disjoint(&game_paths);
+fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool,bool)> {
+	let running_paths = find_running()?;
+	
+    let running_game = !running_paths.is_disjoint(&game_paths);
+
+	let mut running_epic = false;
+	for path in running_paths {
+		if path.ends_with(EPIC_LAUNCHER) {
+			println!("epic launcher path: {}", path);
+			running_epic = true
+		}
+	}
     
-    Ok(is_running)
+    Ok((running_epic, running_game))
 }
+
 
 /**
  * 
@@ -80,9 +95,19 @@ fn find_games(root: &str) -> io::Result<HashSet<String>> {
     Ok(paths)
 }
 
-fn kill_epic_launcher() -> io::Result<std::process::ExitStatus>{
-    Command::new("taskkill.exe")
-        .args(&["/IM", EPIC_LAUNCHER])
-        .stderr(std::process::Stdio::null())
+fn kill_epic_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
+	if force {
+		println!("kill epic launcher (force)...");
+	}else{
+		println!("kill epic launcher...");
+	}
+
+    let mut cmd = Command::new("taskkill.exe");
+    cmd.args(&["/IM", EPIC_LAUNCHER]);
+	if force {
+		cmd.arg("/F");
+	}
+
+    cmd.stderr(std::process::Stdio::null())
         .status()
 }
