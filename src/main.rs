@@ -4,8 +4,8 @@ use std::{thread, time, io};
 use walkdir::WalkDir;
 
 const EPIC_LAUNCHER: &str = "EpicGamesLauncher.exe";
-const SLEEP_SECONDS: u64 = 15;
-const NOT_RUNNING_LOOPS: u8 = 2;
+const SLEEP_SECONDS: u64 = 5;
+const NOT_RUNNING_LOOPS: u8 = 5;
 
 fn main() {
     let epic_games_root = std::env::args().nth(1);
