@@ -2,6 +2,7 @@ use std::process::Command;
 use std::collections::HashSet;
 use std::{thread, time, io};
 use walkdir::WalkDir;
+use procfs::process::{all_processes, Process};
 
 const LAUNCHER: &str = "EADesktop.exe";
 const SLEEP_SECONDS: u64 = 5;
@@ -9,11 +10,24 @@ const NOT_RUNNING_LOOPS: u8 = 10;
 
 fn main() {
     let games_root = std::env::args().nth(1);
+
+    for process in all_processes().unwrap() {
+        let p: Process = process.unwrap();
+        //let path: PathBuf = p.exe().unwrap();
+        //println!("path: {}", path.display());
+
+        match p.exe() {
+            Ok(path) => println!("path: {}", path.display()),
+            Err(_) => (),
+        }
+    }
+    
     if games_root.is_none() {
         println!("USAGE: {} GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
         return;
     }
-    let games = find_games(&games_root.unwrap()).expect("no games found");
+
+    let games = find_games(&games_root.unwrap()).unwrap();
     
     let mut not_running = 0;
     loop {
@@ -30,7 +44,7 @@ fn main() {
 
                 let command: String = format!("$process = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.Path -eq \"{running_game}\" -and $_.MainWindowHandle -ne 0 }}; if ($process) {{ (New-Object -ComObject wscript.shell).AppActivate($process.Id) }}");
                 //println!("command: {}", command);
-                let output = Command::new("powershell").args(&["-command", &command]).output().expect("error").stdout;
+                let output = Command::new("powershell").args(&["-command", &command]).output().unwrap().stdout;
                 println!("\t\t{}", String::from_utf8(output).unwrap());
             }
         }else{
