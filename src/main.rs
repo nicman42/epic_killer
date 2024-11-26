@@ -1,12 +1,12 @@
 use std::process::Command;
 use std::collections::HashSet;
-use std::{thread, time, io};
+use std::{thread, time};
 
 use sysinfo::System;
 
 const LAUNCHER: &str = "EADesktop.exe";
 const SLEEP_SECONDS: u64 = 5;
-const NOT_RUNNING_LOOPS: u8 = 10;
+const NOT_RUNNING_LOOPS: u8 = 5;
 
 fn main() {
     let games_root = std::env::args().nth(1);
@@ -49,9 +49,7 @@ fn main() {
             not_running += 1;
             println!("no game is running ({}. time)", not_running);
             if not_running >= NOT_RUNNING_LOOPS {
-                if kill_launcher(not_running > NOT_RUNNING_LOOPS).is_err() {
-                    println!("couldn't kill launcher");
-                }
+                kill_launcher()
             }
         }
         thread::sleep(time::Duration::new(SLEEP_SECONDS, 0));
@@ -83,19 +81,18 @@ fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
     return (running_launcher, running_games)
 }
 
-fn kill_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
-	if force {
-		println!("kill launcher (force)...");
-	}else{
-		println!("kill launcher...");
-	}
+fn kill_launcher() -> () {
+    println!("kill launcher...");
 
-    let mut cmd = Command::new("taskkill.exe");
-    cmd.args(&["/IM", LAUNCHER]);
-	if force {
-		cmd.arg("/F");
-	}
+    for process in System::new_all().processes_by_exact_name(LAUNCHER.as_ref()) {
+        let exe = process.exe();
+        if exe.is_none() {
+            continue;
+        }
 
-    cmd.stderr(std::process::Stdio::null())
-        .status()
+        let path: &str = exe.unwrap().to_str().unwrap();
+        println!("{}", path);
+        process.kill();
+    }
+
 }
