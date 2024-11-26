@@ -8,21 +8,21 @@ const SLEEP_SECONDS: u64 = 5;
 const NOT_RUNNING_LOOPS: u8 = 5;
 
 fn main() {
-    let epic_games_root = std::env::args().nth(1);
-    if epic_games_root.is_none() {
-        println!("USAGE: {} EPIC_GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
+    let games_root = std::env::args().nth(1);
+    if games_root.is_none() {
+        println!("USAGE: {} GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
         return;
     }
     
-    let games = find_games(&epic_games_root.unwrap()).expect("no games found");
+    let games = find_games(&games_root.unwrap()).expect("no games found");
     
     let mut not_running = 0;
     loop {
-		let (running_epic, running_games) = is_running(&games).unwrap();
+		let (running_launcher, running_games) = is_running(&games).unwrap();
 		
-		if !running_epic {
+		if !running_launcher {
 			not_running = 0;
-			println!("epic launcher is not running");
+			println!("launcher is not running");
 		} else if !running_games.is_empty() {
             not_running = 0;
             println!("a game is running:");
@@ -33,8 +33,8 @@ fn main() {
             not_running += 1;
             println!("no game is running ({}. time)", not_running);
             if not_running >= NOT_RUNNING_LOOPS {
-                if kill_epic_launcher(not_running > NOT_RUNNING_LOOPS).is_err() {
-                    println!("couldn't kill epic launcher");
+                if kill_launcher(not_running > NOT_RUNNING_LOOPS).is_err() {
+                    println!("couldn't kill launcher");
                 }
             }
         }
@@ -48,19 +48,19 @@ fn main() {
 fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool, HashSet::<String>)> {
 	let running_paths: HashSet<String> = find_running()?;
 
-    let mut running_epic: bool = false;
+    let mut running_launcher: bool = false;
     let mut running_games = HashSet::<String>::new();
     for path in running_paths {
-        if path.ends_with(EPIC_LAUNCHER) {
-			println!("epic launcher path: {}", path);
-			running_epic = true
+        if path.ends_with(LAUNCHER) {
+			println!("launcher path: {}", path);
+			running_launcher = true
 		}
         if game_paths.contains(&path) {
             running_games.insert(path);
         }
     }
     
-    Ok((running_epic, running_games))
+    Ok((running_launcher, running_games))
 }
 
 
@@ -85,7 +85,7 @@ fn find_running() -> io::Result<HashSet<String>> {
 }
 
 /**
- * Return path to epic games
+ * Return path to games
  */
 fn find_games(root: &str) -> io::Result<HashSet<String>> {
     let mut paths = HashSet::new();
@@ -100,15 +100,15 @@ fn find_games(root: &str) -> io::Result<HashSet<String>> {
     Ok(paths)
 }
 
-fn kill_epic_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
+fn kill_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
 	if force {
-		println!("kill epic launcher (force)...");
+		println!("kill launcher (force)...");
 	}else{
-		println!("kill epic launcher...");
+		println!("kill launcher...");
 	}
 
     let mut cmd = Command::new("taskkill.exe");
-    cmd.args(&["/IM", EPIC_LAUNCHER]);
+    cmd.args(&["/IM", LAUNCHER]);
 	if force {
 		cmd.arg("/F");
 	}
