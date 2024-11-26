@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 
 const LAUNCHER: &str = "EADesktop.exe";
 const SLEEP_SECONDS: u64 = 5;
-const NOT_RUNNING_LOOPS: u8 = 5;
+const NOT_RUNNING_LOOPS: u8 = 10;
 
 fn main() {
     let games_root = std::env::args().nth(1);
@@ -13,7 +13,6 @@ fn main() {
         println!("USAGE: {} GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
         return;
     }
-    
     let games = find_games(&games_root.unwrap()).expect("no games found");
     
     let mut not_running = 0;
@@ -27,7 +26,12 @@ fn main() {
             not_running = 0;
             println!("a game is running:");
             for running_game in &running_games {
-                println!("\t{}", running_game)
+                println!("\t{}", running_game);
+
+                let command: String = format!("$process = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.Path -eq \"{running_game}\" -and $_.MainWindowHandle -ne 0 }}; if ($process) {{ (New-Object -ComObject wscript.shell).AppActivate($process.Id) }}");
+                //println!("command: {}", command);
+                let output = Command::new("powershell").args(&["-command", &command]).output().expect("error").stdout;
+                println!("\t\t{}", String::from_utf8(output).unwrap());
             }
         }else{
             not_running += 1;
