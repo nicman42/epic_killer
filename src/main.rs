@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::{thread, time, io};
 use walkdir::WalkDir;
 
-const EPIC_LAUNCHER: &str = "EpicGamesLauncher.exe";
+const LAUNCHER: &str = "EADesktop.exe";
 const SLEEP_SECONDS: u64 = 5;
 const NOT_RUNNING_LOOPS: u8 = 5;
 
