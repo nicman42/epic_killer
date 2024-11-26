@@ -1,7 +1,8 @@
 use std::process::Command;
 use std::collections::HashSet;
 use std::{thread, time, io};
-use walkdir::WalkDir;
+
+use sysinfo::System;
 
 const LAUNCHER: &str = "EADesktop.exe";
 const SLEEP_SECONDS: u64 = 5;
@@ -9,15 +10,17 @@ const NOT_RUNNING_LOOPS: u8 = 10;
 
 fn main() {
     let games_root = std::env::args().nth(1);
+
     if games_root.is_none() {
         println!("USAGE: {} GAMES_DIRECTORY", std::env::args().nth(0).unwrap());
         return;
     }
-    let games = find_games(&games_root.unwrap()).expect("no games found");
+
+    let games_root = games_root.unwrap().to_lowercase();
     
     let mut not_running = 0;
     loop {
-		let (running_launcher, running_games) = is_running(&games).unwrap();
+		let (running_launcher, running_games) = is_running(&games_root).unwrap();
 		
 		if !running_launcher {
 			not_running = 0;
@@ -49,59 +52,30 @@ fn main() {
 
 
 
-fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool, HashSet::<String>)> {
-	let running_paths: HashSet<String> = find_running()?;
-
+fn is_running(games_root: &String) -> io::Result<(bool, HashSet::<String>)> {
     let mut running_launcher: bool = false;
     let mut running_games = HashSet::<String>::new();
-    for path in running_paths {
+
+    for (_, process) in System::new_all().processes() {
+        let exe = process.exe();
+        if exe.is_none() {
+            continue;
+        }
+
+        let path = exe.unwrap().to_str().unwrap();
+        // println!("{}", path);
+
         if path.ends_with(LAUNCHER) {
-			println!("launcher path: {}", path);
-			running_launcher = true
-		}
-        if game_paths.contains(&path) {
-            running_games.insert(path);
+            println!("launcher path: {}", path);
+            running_launcher = true
+        }
+
+        if path.to_lowercase().starts_with(games_root) {
+            running_games.insert(path.to_string());
         }
     }
-    
+
     Ok((running_launcher, running_games))
-}
-
-
-/**
- * 
- */
-fn find_running() -> io::Result<HashSet<String>> {
-    let output = Command::new("wmic.exe")
-        .args(&["process", "get", "executablepath"])
-        .output()?
-        .stdout;
-        
-    let mut paths = HashSet::new();
-    for line in String::from_utf8(output).unwrap().lines() {
-        let line = line.trim();
-        if !line.is_empty() {
-            paths.insert(line.to_string());
-        }
-    }
-    
-    Ok(paths)
-}
-
-/**
- * Return path to games
- */
-fn find_games(root: &str) -> io::Result<HashSet<String>> {
-    let mut paths = HashSet::new();
-    
-    for entry in WalkDir::new(root) {
-        let path = entry?.path().display().to_string();
-        if path.ends_with(".exe") {
-            paths.insert(path);
-        }
-    }
-    
-    Ok(paths)
 }
 
 fn kill_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
