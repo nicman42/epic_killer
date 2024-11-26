@@ -20,20 +20,29 @@ fn main() {
     
     let mut not_running = 0;
     loop {
-		let (running_launcher, running_games) = is_running(&games_root).unwrap();
+        println!();
+
+		let (running_launcher, running_games) = is_running(&games_root);
 		
-		if !running_launcher {
+		if running_launcher.is_empty() {
 			not_running = 0;
 			println!("launcher is not running");
-		} else if !running_games.is_empty() {
+        }else {
+            println!("launcher is running:");
+            for path in running_launcher {
+                println!("\t{}", path);
+            }
+        }
+
+		if !running_games.is_empty() {
             not_running = 0;
             println!("a game is running:");
             for running_game in &running_games {
                 println!("\t{}", running_game);
 
+                // focus game window
                 let command: String = format!("$process = Get-Process -ErrorAction SilentlyContinue | Where-Object {{ $_.Path -eq \"{running_game}\" -and $_.MainWindowHandle -ne 0 }}; if ($process) {{ (New-Object -ComObject wscript.shell).AppActivate($process.Id) }}");
-                //println!("command: {}", command);
-                let output = Command::new("powershell").args(&["-command", &command]).output().expect("error").stdout;
+                let output = Command::new("powershell").args(&["-command", &command]).output().unwrap().stdout;
                 println!("\t\t{}", String::from_utf8(output).unwrap());
             }
         }else{
@@ -45,15 +54,14 @@ fn main() {
                 }
             }
         }
-        
         thread::sleep(time::Duration::new(SLEEP_SECONDS, 0));
     }
 }
 
 
 
-fn is_running(games_root: &String) -> io::Result<(bool, HashSet::<String>)> {
-    let mut running_launcher: bool = false;
+fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
+    let mut running_launcher = HashSet::<String>::new();
     let mut running_games = HashSet::<String>::new();
 
     for (_, process) in System::new_all().processes() {
@@ -62,20 +70,17 @@ fn is_running(games_root: &String) -> io::Result<(bool, HashSet::<String>)> {
             continue;
         }
 
-        let path = exe.unwrap().to_str().unwrap();
+        let path: &str = exe.unwrap().to_str().unwrap();
         // println!("{}", path);
 
         if path.ends_with(LAUNCHER) {
-            println!("launcher path: {}", path);
-            running_launcher = true
-        }
-
-        if path.to_lowercase().starts_with(games_root) {
+            running_launcher.insert(path.to_string());
+        }else if path.to_lowercase().starts_with(games_root) {
             running_games.insert(path.to_string());
         }
     }
 
-    Ok((running_launcher, running_games))
+    return (running_launcher, running_games)
 }
 
 fn kill_launcher(force: bool) -> io::Result<std::process::ExitStatus>{
