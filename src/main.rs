@@ -18,14 +18,17 @@ fn main() {
     
     let mut not_running = 0;
     loop {
-		let (running_epic, running_game) = is_running(&games).unwrap();
+		let (running_epic, running_games) = is_running(&games).unwrap();
 		
 		if !running_epic {
 			not_running = 0;
 			println!("epic launcher is not running");
-		} else if running_game {
+		} else if !running_games.is_empty() {
             not_running = 0;
-            println!("a game is running");
+            println!("a game is running:");
+            for running_game in &running_games {
+                println!("\t{}", running_game)
+            }
         }else{
             not_running += 1;
             println!("no game is running ({}. time)", not_running);
@@ -42,20 +45,22 @@ fn main() {
 
 
 
-fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool,bool)> {
+fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool, HashSet::<String>)> {
 	let running_paths: HashSet<String> = find_running()?;
-	
-    let running_game: bool = !running_paths.is_disjoint(&game_paths);
 
-	let mut running_epic: bool = false;
-	for path in running_paths {
-		if path.ends_with(EPIC_LAUNCHER) {
+    let mut running_epic: bool = false;
+    let mut running_games = HashSet::<String>::new();
+    for path in running_paths {
+        if path.ends_with(EPIC_LAUNCHER) {
 			println!("epic launcher path: {}", path);
 			running_epic = true
 		}
-	}
+        if game_paths.contains(&path) {
+            running_games.insert(path);
+        }
+    }
     
-    Ok((running_epic, running_game))
+    Ok((running_epic, running_games))
 }
 
 
