@@ -43,11 +43,11 @@ fn main() {
 
 
 fn is_running(game_paths: &HashSet<String>) -> io::Result<(bool,bool)> {
-	let running_paths = find_running()?;
+	let running_paths: HashSet<String> = find_running()?;
 	
-    let running_game = !running_paths.is_disjoint(&game_paths);
+    let running_game: bool = !running_paths.is_disjoint(&game_paths);
 
-	let mut running_epic = false;
+	let mut running_epic: bool = false;
 	for path in running_paths {
 		if path.ends_with(EPIC_LAUNCHER) {
 			println!("epic launcher path: {}", path);
