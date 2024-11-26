@@ -3,8 +3,9 @@ use std::collections::HashSet;
 use std::{thread, time};
 
 use sysinfo::System;
+use std::path::Path;
 
-const LAUNCHER: &str = "EADesktop.exe";
+const LAUNCHER: [&str; 2] = ["EpicGamesLauncher.exe", "EADesktop.exe"];
 const SLEEP_SECONDS: u64 = 5;
 const NOT_RUNNING_LOOPS: u8 = 5;
 
@@ -29,8 +30,8 @@ fn main() {
 			println!("launcher is not running");
         }else {
             println!("launcher is running:");
-            for path in running_launcher {
-                println!("\t{}", path);
+            for path in &running_launcher {
+                println!("\t{}", &path);
             }
         }
 
@@ -45,11 +46,13 @@ fn main() {
                 let output = Command::new("powershell").args(&["-command", &command]).output().unwrap().stdout;
                 println!("\t\t{}", String::from_utf8(output).unwrap());
             }
-        }else{
+        } else if !running_launcher.is_empty(){
             not_running += 1;
             println!("no game is running ({}. time)", not_running);
             if not_running >= NOT_RUNNING_LOOPS {
-                kill_launcher()
+                for launcher in &running_launcher {
+                    kill_launcher(&launcher)
+                }
             }
         }
         thread::sleep(time::Duration::new(SLEEP_SECONDS, 0));
@@ -71,9 +74,12 @@ fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
         let path: &str = exe.unwrap().to_str().unwrap();
         // println!("{}", path);
 
-        if path.ends_with(LAUNCHER) {
-            running_launcher.insert(path.to_string());
-        }else if path.to_lowercase().starts_with(games_root) {
+        for launcher in LAUNCHER {
+            if path.ends_with(launcher) {
+                running_launcher.insert(path.to_string());
+            }
+        }
+        if path.to_lowercase().starts_with(games_root) {
             running_games.insert(path.to_string());
         }
     }
@@ -81,18 +87,22 @@ fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
     return (running_launcher, running_games)
 }
 
-fn kill_launcher() -> () {
-    println!("kill launcher...");
+fn kill_launcher(launcher: &String) -> () {
+    let launcher_file_name = Path::new(launcher).file_name().unwrap();
 
-    for process in System::new_all().processes_by_exact_name(LAUNCHER.as_ref()) {
+    println!("kill launcher {:?}:", launcher_file_name);
+
+    for process in System::new_all().processes_by_exact_name(launcher_file_name) {
         let exe = process.exe();
         if exe.is_none() {
             continue;
         }
 
         let path: &str = exe.unwrap().to_str().unwrap();
-        println!("{}", path);
-        process.kill();
+        if path == launcher {
+            println!("\t{}", path);
+            process.kill();
+        }
     }
 
 }
