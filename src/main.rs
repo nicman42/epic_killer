@@ -71,11 +71,13 @@ fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
             continue;
         }
 
-        let path: &str = exe.unwrap().to_str().unwrap();
-        // println!("{}", path);
+        let exe: &Path = exe.unwrap();
+        let path = exe.to_str().unwrap();
+        let file_name = exe.file_name().unwrap();
+        println!("{}", path);
 
         for launcher in LAUNCHER {
-            if path.ends_with(launcher) {
+            if file_name == launcher {
                 running_launcher.insert(path.to_string());
             }
         }
@@ -87,8 +89,8 @@ fn is_running(games_root: &String) -> (HashSet::<String>, HashSet::<String>) {
     return (running_launcher, running_games)
 }
 
-fn kill_launcher(launcher: &String) -> () {
-    let launcher_file_name = Path::new(launcher).file_name().unwrap();
+fn kill_launcher(launcher_path: &String) -> () {
+    let launcher_file_name = Path::new(launcher_path).file_name().unwrap();
 
     println!("kill launcher {:?}:", launcher_file_name);
 
@@ -99,7 +101,7 @@ fn kill_launcher(launcher: &String) -> () {
         }
 
         let path: &str = exe.unwrap().to_str().unwrap();
-        if path == launcher {
+        if path == launcher_path {
             println!("\t{}", path);
             process.kill();
         }
