@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 walkdir="2.2.7"
+sysinfo="0.32.1" 
